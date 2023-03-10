@@ -1,0 +1,26 @@
+[entryPoints]
+  [entryPoints.web]
+    address = ":80"
+
+  [entryPoints.websecure]
+    address = ":443"
+
+  [entryPoints.debug]
+    address = ":9003"
+
+[api]
+  insecure = true
+  dashboard = true
+  debug = true
+
+[providers]
+  [providers.docker]
+    exposedByDefault = false
+    network = "proxy"
+
+[accessLog]
+  filePath = "/var/log/access.log"
+  format = "json"
+
+  [accessLog.fields.headers]
+    defaultMode = "keep"

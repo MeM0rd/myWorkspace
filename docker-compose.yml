@@ -1,0 +1,86 @@
+version: '3.8'
+
+networks:
+  default:
+    name: workspace
+  proxy:
+    name: proxy
+
+volumes:
+  shared:
+    name: shared
+
+services:
+### Postgres #################################################
+  postgres:
+    build: ./postgres
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    restart: always
+    volumes:
+      - ${DATA_PATH}/postgres:/var/lib/postgresql/data
+      - ${DATA_PATH}/tmp:/tmp/sql
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+    ### Если не задать shm, то может появляться ошибка SQLSTATE[53100]: Disk full
+    shm_size: 1g
+
+### Redis ################################################
+  redis:
+    build: ./redis
+    restart: always
+    volumes:
+      - ${DATA_PATH}/redis:/data
+
+### Redis_tags ################################################
+  redistags:
+    build: ./redis
+    restart: always
+    volumes:
+      - ${DATA_PATH}/redistags:/data
+
+  redislru:
+    build: ./redis
+    restart: always
+    volumes:
+      - ${DATA_PATH}/redislru:/data
+
+  redis-oa:
+    build: ./redis
+    restart: always
+    volumes:
+      - ${DATA_PATH}/redis-oa:/data
+
+  redislru-oa:
+    build: ./redis
+    restart: always
+    volumes:
+      - ${DATA_PATH}/redislru-oa:/data
+
+  redisstats-oa:
+    build: ./redis
+    restart: always
+    volumes:
+      - ${DATA_PATH}/redisstats-oa:/data
+
+  proxy:
+    image: traefik:v2.6.3
+    command: --api.insecure=true --providers.docker
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik.toml:/etc/traefik/traefik.toml
+      - shared:/home/shared
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.monitor.rule=Host(`monitor.loc`)
+      - traefik.http.services.monitor.loadbalancer.server.port=8080
